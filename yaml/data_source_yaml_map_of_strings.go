@@ -71,6 +71,11 @@ func flattenValue(result map[string]string, v reflect.Value, prefix string, sepa
 	if v.Kind() == reflect.Interface {
 		v = v.Elem()
 	}
+	// For empty values we don't have anything to flatten and bail out early to
+	// prevent panic when calling v.Interface()
+	if v.Kind() == reflect.Invalid {
+		return nil
+	}
 
 	switch v.Kind() {
 	case reflect.Map:
