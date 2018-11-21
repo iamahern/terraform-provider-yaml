@@ -42,7 +42,7 @@ func readYamlMap(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	result := make(map[string]string)
+	result := make(map[string]interface{})
 
 	if shouldFlatten {
 		for key, value := range parsed {
@@ -67,13 +67,17 @@ func readYamlMap(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
-func flattenValue(result map[string]string, v reflect.Value, prefix string, separator string) error {
+func flattenValue(result map[string]interface{}, v reflect.Value, prefix string, separator string) error {
 	if v.Kind() == reflect.Interface {
 		v = v.Elem()
 	}
 	// For empty values we don't have anything to flatten and bail out early to
-	// prevent panic when calling v.Interface()
+	// prevent panic when calling v.Interface(). We still create a value in result
+	// map, but set its value to nil leaving a question how to represent null
+	// value to Terraform. From what we see, currently Terraform represents it
+	// in the same way as the empty string.
 	if v.Kind() == reflect.Invalid {
+		result[prefix] = nil
 		return nil
 	}
 
@@ -90,7 +94,7 @@ func flattenValue(result map[string]string, v reflect.Value, prefix string, sepa
 	return nil
 }
 
-func flattenMap(result map[string]string, v reflect.Value, prefix string, separator string) {
+func flattenMap(result map[string]interface{}, v reflect.Value, prefix string, separator string) {
 	for _, k := range v.MapKeys() {
 		if k.Kind() == reflect.Interface {
 			k = k.Elem()
